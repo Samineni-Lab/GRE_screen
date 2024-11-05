@@ -1,11 +1,11 @@
+## Cellranger pipeline for mapping Projection-TAG and transcript reads
+
+
+## Plots
+
+
 ## GRE_screen
 This repository describes the R scripts used for identifying putative celltype-specific genomic regulatory elements (GREs) using snRNA-seq and snATAC-seq data.
-
-Important packages in R:
-R version 4.4.1
-Seurat 5.1.0
-Signac 1.13.0
-
 
 Step 1: Get expression/accessibility data of differentially expressed (DE) genes and differentially accessible (DA) peaks for each cell type.
 
