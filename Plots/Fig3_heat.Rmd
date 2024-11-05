@@ -1,0 +1,154 @@
+---
+title: "Untitled"
+author: "Lite Yang"
+date: "2023-03-10"
+output: html_document
+---
+
+```{r}
+library(dplyr)
+library(gridExtra)
+library(ggplot2)
+library(gplots)
+library(tibble)
+library(viridis)
+
+# read files
+file_path='./'
+
+load(paste0(file_path,'bcLabels.Robj')) # labels for BCs
+load(paste0(file_path,'bcColors.Robj')) # colors for BCs
+meta=data.table::fread(paste0(file_path,'snRNAseq_metadata.csv'),data.table = F) # Seurat meta data
+labels=readxl::read_xlsx(paste0(file_path,'label_color.xlsx')) # colors for clusters
+celColors=labels$Subtype.color
+names(celColors)=labels$Subtype_2
+
+######## Calculate data #########
+projections=c('MOp','SSp','VP','PAG','MY','SCL','SCS')
+# subset for neuronal cells
+meta=meta%>%filter(Class %in% c('Glut','GABA'))
+# calculate nBC expressed in each nucleus
+meta$n_BC=rowSums(meta[,projections]>0,na.rm = T)
+# generate projection groups by aggregating postive BCs
+meta$p_feature=apply(meta[,projections],1,paste0,collapse='')
+# filter projection groups with less than 60 nuclei
+p_feature.select=names(table(meta$p_feature)[table(meta$p_feature)>=60])
+
+######## Plot groups with nBC=1 #########
+# randomly sample 1000 cells for plotting
+meta.select=meta%>%
+  mutate(Subtype=factor(Subtype,levels=names(celColors)))%>%
+  filter(p_feature %in% p_feature.select,n_BC==1)%>%
+  sample_n(1000)%>%
+  arrange(n_BC,desc(p_feature),Subtype)%>%
+  rownames_to_column('order')%>%
+  mutate(order=as.numeric(order))
+
+data.plot=meta.select%>%
+  subset(select=projections)%>%
+  as.matrix()%>%
+  t()
+
+pdf(paste0('./','Fig3c_heat.pdf'),width=8,height=4)
+heatmap.2(data.plot,
+          Rowv = F,
+          Colv = F,
+          dendrogram = 'none',
+          col=c('white',viridis_pal(option = 'G')(9)[6]),
+          scale = 'none',
+          symkey       = F,
+          tracecol     = NA,
+          key.title    = NA,
+          density.info = 'none'
+          )
+dev.off()
+
+
+d1=ggplot(meta.select,aes(x=order,y=1,fill=Subtype))+
+  geom_tile()+
+  theme_void()+
+  scale_fill_manual(guide=F,values=celColors)
+
+d2=ggplot(meta.select,aes(x=order,y=1,fill=group))+
+  geom_tile()+
+  theme_void()+
+  scale_fill_manual(guide=F,values=c('#be1e2d','#762a83','#1c75bc'))
+
+d3=ggplot(meta.select,aes(x=order,y=1,fill=factor(n_BC)))+
+  geom_tile()+
+  theme_void()+
+  scale_fill_manual(guide=F,values=viridis_pal()(8)[1])
+
+colors=colorRampPalette(c('grey80','black'))(length(unique(meta.select$p_feature)))
+colors=colors[sample(length(colors))]
+d4=ggplot(meta.select,aes(x=order,y=1,fill=factor(p_feature)))+
+  geom_tile()+
+  theme_void()+
+  scale_fill_manual(guide=F,values=colors)
+
+de=ggplot()+theme_void()
+
+pdf(paste0('./','Fig3c_sidebar.pdf'),width=6,height=2)
+grid.arrange(d1,d3,de,d4,ncol=1)
+dev.off()
+
+
+######## Plot groups with nBC>1 #########
+
+meta.select=meta%>%
+  mutate(Subtype=factor(Subtype,levels=names(celColors)))%>%
+  filter(Class=='Glut',p_feature %in% p_feature.select,n_BC>1)%>%
+  sample_n(1000)%>%
+  arrange(n_BC,desc(p_feature),Subtype)%>%
+  rownames_to_column('order')%>%
+  mutate(order=as.numeric(order))
+
+data.plot=meta.select%>%
+  subset(select=projections)%>%
+  as.matrix()%>%
+  t()
+
+pdf(paste0('./','Fig3d_heat.pdf'),width=8,height=4)
+heatmap.2(data.plot,
+          Rowv = F,
+          Colv = F,
+          dendrogram = 'none',
+          col=c('white',viridis_pal(option = 'G')(9)[6]),
+          scale = 'none',
+          symkey       = F,
+          tracecol     = NA,
+          key.title    = NA,
+          density.info = 'none'
+          )
+dev.off()
+
+
+d1=ggplot(meta.select,aes(x=order,y=1,fill=Subtype))+
+  geom_tile()+
+  theme_void()+
+  scale_fill_manual(guide=F,values=celColors)
+
+d2=ggplot(meta.select,aes(x=order,y=1,fill=group))+
+  geom_tile()+
+  theme_void()+
+  scale_fill_manual(guide=F,values=c('#be1e2d','#762a83','#1c75bc'))
+
+d3=ggplot(meta.select,aes(x=order,y=1,fill=factor(n_BC)))+
+  geom_tile()+
+  theme_void()+
+  scale_fill_manual(guide=F,values=viridis_pal()(8)[2:6])
+
+colors=colorRampPalette(c('grey80','black'))(length(unique(meta.select$p_feature)))
+colors=colors[sample(length(colors))]
+d4=ggplot(meta.select,aes(x=order,y=1,fill=factor(p_feature)))+
+  geom_tile()+
+  theme_void()+
+  scale_fill_manual(guide=F,values=colors)
+
+de=ggplot()+theme_void()
+
+pdf(paste0('./','Fig3d_sidebar.pdf'),width=6,height=2)
+grid.arrange(d1,d3,de,d4,ncol=1)
+dev.off()
+
+```

@@ -1,7 +1,7 @@
 ## Mapping Projection-TAG reads
 This section describes the command line scripts used for mapping Projection-TAG reads using cellranger.
 
-Step 1: Generate a custom mm10 reference genome including Projection-TAG features.
+Step 1: Generate a custom reference genome including Projection-TAG features.
 
 Step 2: Map the sequencing reads to the custom genome.
 
